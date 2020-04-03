@@ -1,4 +1,5 @@
 const express = require('express');
+const session = require('express-session');
 const passport = require('passport');
 const boom = require('@hapi/boom');
 const cookieParser = require('cookie-parser');
@@ -10,12 +11,27 @@ const app = express();
 // Body parser
 app.use(express.json());
 app.use(cookieParser());
+app.use(
+    session({
+        secret: config.sessionSecret,
+        resave: false,
+        saveUninitialized: false
+    })
+);
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Basic Strategy
 require('./utils/auth/strategies/basic');
 
 // OAuth Strategy
 require('./utils/auth/strategies/oauth');
+
+// Twitter Strategy
+require('./utils/auth/strategies/twitter');
+
+// Facebook Strategy
+require('./utils/auth/strategies/facebook');
 
 app.post('/auth/sign-in', async (req, res, next) => {
     passport.authenticate('basic', (error, data) => {
@@ -108,7 +124,7 @@ app.delete('/user-movies/:userMovieId', async (req, res, next) => {
 app.get(
     '/auth/google-oauth',
     passport.authenticate('google-oauth', {
-        scopes: ['email', 'profile', 'openid']
+        scope: ['email', 'profile', 'openid']
     })
 );
 
@@ -124,8 +140,55 @@ app.get(
 
         res.cookie('token', token, {
             httpOnly: !config.dev,
-            secure: !config.dev,
-        })
+            secure: !config.dev
+        });
+
+        res.status(200).json(user);
+    }
+);
+
+app.get('/auth/twitter', passport.authenticate('twitter'));
+
+app.get(
+    '/auth/twitter/callback',
+    passport.authenticate('twitter', { session: false }),
+    (req, res, next) => {
+        if (!req.user) {
+            next(boom.unauthorized());
+        }
+
+        const { token, ...user } = req.user;
+
+        res.cookie('token', token, {
+            httpOnly: !config.dev,
+            secure: !config.dev
+        });
+
+        res.status(200).json(user);
+    }
+);
+
+app.get(
+    '/auth/facebook',
+    passport.authenticate('facebook', {
+        scope: ['email']
+    })
+);
+
+app.get(
+    '/auth/facebook/callback',
+    passport.authenticate('facebook', { session: false }),
+    (req, res, next) => {
+        if (!req.user) {
+            next(boom.unauthorized());
+        }
+
+        const { token, ...user } = req.user;
+
+        res.cookie('token', token, {
+            httpOnly: !config.dev,
+            secure: !config.dev
+        });
 
         res.status(200).json(user);
     }
