@@ -18,7 +18,7 @@ passport.use(
                 method: 'post',
                 data: {
                     name: profile.displayName,
-                    email: profile.emails || `${profile.id}@facebook.com`,
+                    email: profile.email || `${profile.id}@facebook.com`,
                     password: profile.id,
                     apiKeyToken: config.apiKeyToken
                 }

@@ -4,11 +4,13 @@ const passport = require('passport');
 const boom = require('@hapi/boom');
 const cookieParser = require('cookie-parser');
 const axios = require('axios');
+const helmet = require('helmet');
 
 const { config } = require('./config');
 
 const app = express();
 // Body parser
+app.use(helmet());
 app.use(express.json());
 app.use(cookieParser());
 app.use(
